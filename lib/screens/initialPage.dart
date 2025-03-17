@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_capture/screens/pdfList.dart';
 import 'package:sign_capture/screens/pdfViewerScreen.dart';
 import 'package:sign_capture/screens/signScreen.dart';
 
@@ -37,15 +38,28 @@ class _InitialpageState extends State<Initialpage> {
                   child: Text('Signature Screen')),
             
                   //Pdf Viewer Screen
+                  // ElevatedButton(
+                  // onPressed: () {
+                  //   Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) => PdfViewerScreen(),
+                  //       ));
+                  // },
+                  // child: Text('Pdf Viewer Screen')),
+
+
+                  //list
                   ElevatedButton(
                   onPressed: () {
-                    // Navigator.push(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //       builder: (context) => ,
-                    //     ));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PdfListViewerScreen(),
+                        ));
                   },
-                  child: Text('Pdf Viewer Screen'))
+                  child: Text('Pdf List Screen')),
+
             ]),
           )),
     );
