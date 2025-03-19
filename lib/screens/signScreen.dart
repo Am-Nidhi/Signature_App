@@ -21,7 +21,7 @@ class _SignatureScreenState extends State<SignatureScreen> {
     _signaturePadKey.currentState?.clear();
   }
 
-  // Save the signature as an image, Base64, and to SQLite
+  // // Save the signature as an image, Base64, and to SQLite
   Future<void> _saveSignature() async {
     // Get the signature as a byte array
     final signature = await _signaturePadKey.currentState?.toImage();
@@ -55,6 +55,60 @@ class _SignatureScreenState extends State<SignatureScreen> {
       SnackBar(content: Text("Signature saved to gallery and database!")),
     );
   }
+
+//   Future<void> _saveSignature() async {
+//   // Get the signature as a byte array
+//   final signature = await _signaturePadKey.currentState?.toImage();
+//   if (signature == null) return;
+
+//   // Convert the signature image to PNG bytes
+//   final byteData = await signature.toByteData(format: ui.ImageByteFormat.png);
+//   final buffer = byteData!.buffer.asUint8List();
+
+//   // Convert image to Base64
+//   String base64String = base64Encode(buffer);
+
+//   // Save the image to a file first (for gallery)
+//   final directory = await getApplicationDocumentsDirectory();
+//   final filePath = '${directory.path}/signature.png';
+//   final file = File(filePath);
+
+//   // Write the byte data to the file
+//   await file.writeAsBytes(buffer);
+//   print("Signature saved as PNG at $filePath");
+
+//   // Save the image to the gallery using gal
+//   await Gal.putImage(filePath, album: 'Signatures'); // You can specify your album name
+
+//   // Save the Base64 and image data to SQLite database
+//   await DatabaseHelper.saveSignature(base64String, buffer);
+
+//   // Show a confirmation Snackbar
+//   ScaffoldMessenger.of(context).showSnackBar(
+//     SnackBar(content: Text("Signature saved to gallery and database!")),
+//   );
+
+//   // Save the signature 150 times for testing purposes
+//   for (int i = 0; i < 150; i++) {
+//     // Delay to avoid blocking UI thread
+//     await Future.delayed(Duration(milliseconds: 100)); // Adjust delay as needed
+
+//     // Save signature again in the loop
+//     final filePathWithIndex = '${directory.path}/signature_$i.png';
+//     final fileWithIndex = File(filePathWithIndex);
+
+//     // Write the byte data to the file
+//     await fileWithIndex.writeAsBytes(buffer);
+//     print("Signature $i saved as PNG at $filePathWithIndex");
+
+//     // Save the image to the gallery using gal
+//     await Gal.putImage(filePathWithIndex, album: 'Signatures');
+
+//     // Save the Base64 and image data to SQLite database
+//     await DatabaseHelper.saveSignature(base64String, buffer);
+//   }
+// }
+
 
   @override
   Widget build(BuildContext context) {

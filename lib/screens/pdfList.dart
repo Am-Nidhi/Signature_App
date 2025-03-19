@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class PdfListViewerScreen extends StatefulWidget {
   const PdfListViewerScreen({super.key});
@@ -20,49 +21,131 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
   ];
 
   List<String> _localPaths = List.generate(3, (_) => ""); // List to store local file paths
+  bool _isConnected = true; // Flag to track internet connectivity
+
+  @override
+  void initState() {
+    super.initState();
+    _checkDownloadedFiles(); // Check for previously downloaded files on initialization
+  }
+
+  // Request storage permissions
+  Future<void> _requestPermissions() async {
+    if (Platform.isAndroid) {
+      // Request storage permissions for Android 9 and below
+      if (await Permission.storage.request().isGranted) {
+        print("Storage Permission granted");
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Storage permission denied')),
+        );
+      }
+
+      // For Android 10 and above, request MANAGE_EXTERNAL_STORAGE permission if needed
+      if (await Permission.manageExternalStorage.request().isGranted) {
+        print("MANAGE_EXTERNAL_STORAGE permission granted");
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('App needs access to storage')),
+        );
+      }
+    }
+  }
+
+  // Check if the PDF file is already downloaded
+  Future<void> _checkDownloadedFiles() async {
+    final directory = await getExternalStorageDirectory();
+
+    if (directory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to access storage')));
+      return;
+    }
+
+    for (int i = 0; i < _pdfUrls.length; i++) {
+      final fileName = _pdfUrls[i].split('/').last;
+      final file = File('${directory.path}/$fileName');
+
+      if (await file.exists()) {
+        setState(() {
+          _localPaths[i] = file.path; // If file exists, update the local path
+        });
+      }
+    }
+  }
+
+  // Method to check for internet connectivity
+Future<void> _checkInternetConnectivity() async {
+  print("Checking internet connectivity...");
+
+  // Get the connectivity result list
+  final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
+
+  print("Connectivity result: $connectivityResult");
+
+  setState(() {
+    // Check if the connectivity result contains any active connection types
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      // No internet connection
+      print("No internet connection.");
+      _isConnected = false;
+    } else if (connectivityResult.contains(ConnectivityResult.mobile)) {
+      // Mobile network available
+      print("Mobile network available.");
+      _isConnected = true;
+    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
+      // Wi-Fi available
+      print("Wi-Fi available.");
+      _isConnected = true;
+    } else if (connectivityResult.contains(ConnectivityResult.ethernet)) {
+      // Ethernet connection available
+      print("Ethernet connection available.");
+      _isConnected = true;
+    } else if (connectivityResult.contains(ConnectivityResult.vpn)) {
+      // VPN connection active
+      print("VPN connection active.");
+      _isConnected = true;
+    } else if (connectivityResult.contains(ConnectivityResult.bluetooth)) {
+      // Bluetooth connection available (this might be a rare case)
+      print("Bluetooth connection available.");
+      _isConnected = true;
+    } else if (connectivityResult.contains(ConnectivityResult.other)) {
+      // Connected to an unknown network type (e.g., a custom network or another type)
+      print("Connected to an unknown network type.");
+      _isConnected = true;
+    }
+  });
+}
 
   // Method to download PDF with the correct name and location
   Future<void> _downloadPdf(int index) async {
-    // Request storage permissions
-    PermissionStatus permissionStatus = await Permission.storage.request();
-
-    if (permissionStatus.isGranted) {
-      try {
-        // Get the "Download" directory path
-        final directory = Directory('/storage/emulated/0/Download');
-        
-        if (!await directory.exists()) {
-          // If the directory doesn't exist, create it
-          await directory.create(recursive: true);
-        }
-
-        // Extract file name from the URL (you can adjust it based on your needs)
-        final fileName = _pdfUrls[index].split('/').last;
-        final file = File('${directory.path}/$fileName');
-
-        // Download PDF using the http package
-        final response = await http.get(Uri.parse(_pdfUrls[index]));
-        if (response.statusCode == 200) {
-          // Save the file
-          await file.writeAsBytes(response.bodyBytes);
-
-          // Update the local path list to store the downloaded file path
-          setState(() {
-            _localPaths[index] = file.path;
-          });
-
-          // Inform the user that the file has been saved
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF downloaded to ${file.path}')));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to download PDF')));
-        }
-      } catch (e) {
-        // Handle any errors that occur during the download process
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error downloading PDF: $e')));
+    try {
+      // Get the "Download" directory path using path_provider
+      final directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to access storage')));
+        return;
       }
-    } else {
-      // Inform the user if permission is denied
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Permission denied')));
+
+      final fileName = _pdfUrls[index].split('/').last;
+      final file = File('${directory.path}/$fileName');
+
+      final response = await http.get(Uri.parse(_pdfUrls[index]));
+      if (response.statusCode == 200) {
+        await file.writeAsBytes(response.bodyBytes);
+
+        setState(() {
+          _localPaths[index] = file.path; // Update path after download
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('PDF downloaded to ${file.path}')));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to download PDF')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error downloading PDF: $e')));
     }
   }
 
@@ -73,9 +156,8 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
       body: ListView.builder(
         itemCount: _pdfUrls.length,
         itemBuilder: (context, index) {
-          // Check if the file exists locally
-          final file = File('/storage/emulated/0/Download/${_pdfUrls[index].split('/').last}');
-          
+          final file = File('${_localPaths[index]}');
+
           return ListTile(
             title: Text('PDF ${index + 1}'),
             trailing: file.existsSync()
@@ -86,26 +168,30 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
                 : IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () {
-                      _downloadPdf(index);
+                      _downloadPdf(index);  // Trigger PDF download
                     },
                   ),
-            onTap: () {
-              // Open PDF from local file or network based on download status
-              if (file.existsSync()) {
-                // Open PDF from local storage
+            onTap: () async {
+              print("Tapped on PDF ${index + 1}");
+              // Check internet connectivity before navigating
+              await _checkInternetConnectivity(); // Force check the internet connectivity
+              print("Is connected to internet: $_isConnected");
+
+              if (file.existsSync() || _isConnected) {
+                // Proceed to open the PDF if file exists or if connected to internet
+                print("Navigating to PDF viewer...");
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PdfViewerScreen1(pdfFile: file),
+                    builder: (context) => PdfViewerScreen(
+                        pdfUrl: _pdfUrls[index], pdfFile: file.existsSync() ? file : null),
                   ),
                 );
               } else {
-                // Open PDF from network
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => PdfViewerScreen1(pdfUrl: _pdfUrls[index]),
-                  ),
+                // Show message when no internet is available
+                print("No internet connection to load the PDF.");
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('No internet connection to load the PDF.')),
                 );
               }
             },
@@ -116,11 +202,11 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
   }
 }
 
-class PdfViewerScreen1 extends StatelessWidget {
+class PdfViewerScreen extends StatelessWidget {
   final String pdfUrl;
   final File? pdfFile;
 
-  const PdfViewerScreen1({Key? key, this.pdfUrl = '', this.pdfFile}) : super(key: key);
+  const PdfViewerScreen({Key? key, this.pdfUrl = '', this.pdfFile}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
