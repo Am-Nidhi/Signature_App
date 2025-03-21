@@ -20,7 +20,8 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
     'https://www.aeee.in/wp-content/uploads/2020/08/Sample-pdf.pdf',
   ];
 
-  List<String> _localPaths = List.generate(3, (_) => ""); // List to store local file paths
+  List<String> _localPaths =
+      List.generate(3, (_) => ""); // List to store local file paths
   bool _isConnected = true; // Flag to track internet connectivity
 
   @override
@@ -54,10 +55,11 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
 
   // Check if the PDF file is already downloaded
   Future<void> _checkDownloadedFiles() async {
-    final directory = await getExternalStorageDirectory();
+    final directory = await _getStorageDirectory();
 
     if (directory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to access storage')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Unable to access storage')));
       return;
     }
 
@@ -74,55 +76,36 @@ class _PdfListViewerScreenState extends State<PdfListViewerScreen> {
   }
 
   // Method to check for internet connectivity
-Future<void> _checkInternetConnectivity() async {
-  print("Checking internet connectivity...");
+  Future<void> _checkInternetConnectivity() async {
+    print("Checking internet connectivity...");
 
-  // Get the connectivity result list
-  final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
+    // Get the connectivity result list
+    final List<ConnectivityResult> connectivityResult =
+        await Connectivity().checkConnectivity();
 
-  print("Connectivity result: $connectivityResult");
+    print("Connectivity result: $connectivityResult");
 
-  setState(() {
-    // Check if the connectivity result contains any active connection types
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      // No internet connection
-      print("No internet connection.");
-      _isConnected = false;
-    } else if (connectivityResult.contains(ConnectivityResult.mobile)) {
-      // Mobile network available
-      print("Mobile network available.");
-      _isConnected = true;
-    } else if (connectivityResult.contains(ConnectivityResult.wifi)) {
-      // Wi-Fi available
-      print("Wi-Fi available.");
-      _isConnected = true;
-    } else if (connectivityResult.contains(ConnectivityResult.ethernet)) {
-      // Ethernet connection available
-      print("Ethernet connection available.");
-      _isConnected = true;
-    } else if (connectivityResult.contains(ConnectivityResult.vpn)) {
-      // VPN connection active
-      print("VPN connection active.");
-      _isConnected = true;
-    } else if (connectivityResult.contains(ConnectivityResult.bluetooth)) {
-      // Bluetooth connection available (this might be a rare case)
-      print("Bluetooth connection available.");
-      _isConnected = true;
-    } else if (connectivityResult.contains(ConnectivityResult.other)) {
-      // Connected to an unknown network type (e.g., a custom network or another type)
-      print("Connected to an unknown network type.");
-      _isConnected = true;
-    }
-  });
-}
+    setState(() {
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        // No internet connection
+        print("No internet connection.");
+        _isConnected = false;
+      } else {
+        // There is an active connection (mobile, wifi, etc.)
+        print("Connected to internet.");
+        _isConnected = true;
+      }
+    });
+  }
 
   // Method to download PDF with the correct name and location
   Future<void> _downloadPdf(int index) async {
     try {
-      // Get the "Download" directory path using path_provider
-      final directory = await getExternalStorageDirectory();
+      // Get the storage directory based on the platform
+      final directory = await _getStorageDirectory();
       if (directory == null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unable to access storage')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Unable to access storage')));
         return;
       }
 
@@ -140,12 +123,23 @@ Future<void> _checkInternetConnectivity() async {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('PDF downloaded to ${file.path}')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to download PDF')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to download PDF')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error downloading PDF: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error downloading PDF: $e')));
+    }
+  }
+
+  // Platform-specific method to get storage directory
+  Future<Directory?> _getStorageDirectory() async {
+    if (Platform.isAndroid) {
+      return await getExternalStorageDirectory(); // Android-specific
+    } else if (Platform.isIOS) {
+      return await getApplicationDocumentsDirectory(); // iOS-specific
+    } else {
+      return null; // Handle other platforms if needed
     }
   }
 
@@ -168,7 +162,7 @@ Future<void> _checkInternetConnectivity() async {
                 : IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () {
-                      _downloadPdf(index);  // Trigger PDF download
+                      _downloadPdf(index); // Trigger PDF download
                     },
                   ),
             onTap: () async {
@@ -184,14 +178,16 @@ Future<void> _checkInternetConnectivity() async {
                   context,
                   MaterialPageRoute(
                     builder: (context) => PdfViewerScreen(
-                        pdfUrl: _pdfUrls[index], pdfFile: file.existsSync() ? file : null),
+                        pdfUrl: _pdfUrls[index],
+                        pdfFile: file.existsSync() ? file : null),
                   ),
                 );
               } else {
                 // Show message when no internet is available
                 print("No internet connection to load the PDF.");
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('No internet connection to load the PDF.')),
+                  SnackBar(
+                      content: Text('No internet connection to load the PDF.')),
                 );
               }
             },
@@ -206,7 +202,8 @@ class PdfViewerScreen extends StatelessWidget {
   final String pdfUrl;
   final File? pdfFile;
 
-  const PdfViewerScreen({Key? key, this.pdfUrl = '', this.pdfFile}) : super(key: key);
+  const PdfViewerScreen({Key? key, this.pdfUrl = '', this.pdfFile})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
