@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sign_capture/screens/mapsScreen.dart';
+import 'package:sign_capture/screens/pdf/pdflist2.dart';
 import 'package:sign_capture/screens/pdfList.dart';
 import 'package:sign_capture/screens/pdfViewerScreen.dart';
 import 'package:sign_capture/screens/signScreen.dart';
@@ -50,15 +52,30 @@ class _InitialpageState extends State<Initialpage> {
 
 
                   //list
+                  // ElevatedButton(
+                  // onPressed: () {
+                  //   Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) => PdfListViewerScreen(),
+                  //       ));
+                  // },   
+                  // child: Text('Pdf List Screen')),
+
                   ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PdfListViewerScreen(),
+                          builder: (context) => MapsScreen(),
                         ));
                   },
-                  child: Text('Pdf List Screen')),
+                  child: Text('Maps Screen')),
+
+                  ElevatedButton(onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => Pdflist2(),));
+                  }, child: Text('PDF List 2 Screen'))
+
 
             ]),
           )),
